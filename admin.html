@@ -63,6 +63,7 @@ th{color:var(--muted);font-weight:600;font-size:.72rem;text-transform:uppercase;
 .status-commande{background:#8a8a8a;}
 .status-attente_fournisseur{background:var(--warn);}
 .status-disponible_salle{background:var(--ok);}
+.status-annulee{background:#b02a37;}
 
 .order-card{border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;}
 .order-head{
@@ -73,6 +74,9 @@ th{color:var(--muted);font-weight:600;font-size:.72rem;text-transform:uppercase;
 .order-lines.show{display:block;}
 .line-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-bottom:1px dashed var(--border);font-size:.82rem;flex-wrap:wrap;}
 .line-row:last-child{border-bottom:none;}
+.line-row.annulee{opacity:.5;}
+.line-row.annulee .line-desc{text-decoration:line-through;}
+.qty-input{width:52px;padding:4px 6px;font-size:.8rem;text-align:center;}
 .modif-flag{background:#fdecea;color:#b02a37;font-size:.72rem;padding:3px 8px;border-radius:6px;font-weight:600;}
 
 .filters{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
@@ -129,6 +133,7 @@ th{color:var(--muted);font-weight:600;font-size:.72rem;text-transform:uppercase;
             <option value="commande">Commandé</option>
             <option value="attente_fournisseur">En attente fournisseur</option>
             <option value="disponible_salle">À disposition à la salle</option>
+            <option value="annulee">Annulée</option>
           </select>
           <input type="text" id="filter-search" placeholder="Recherche nom / n° commande" oninput="renderCommandes()">
         </div>
@@ -306,7 +311,8 @@ const STATUTS = ["commande","attente_fournisseur","disponible_salle"];
 const STATUT_LABELS = {
   commande:"Commandé",
   attente_fournisseur:"En attente fournisseur",
-  disponible_salle:"À disposition à la salle"
+  disponible_salle:"À disposition à la salle",
+  annulee:"Annulée"
 };
 
 function escapeHtml(str){
@@ -403,8 +409,9 @@ function initApp(){
 
 function statutGlobalOrder(order){
   const lignes = Object.values(order.lignes || {});
-  if(lignes.length===0) return "commande";
-  const idxs = lignes.map(l=>STATUTS.indexOf(l.statut||"commande"));
+  const actives = lignes.filter(l=>!l.annulee);
+  if(actives.length===0) return lignes.length===0 ? "commande" : "annulee";
+  const idxs = actives.map(l=>STATUTS.indexOf(l.statut||"commande"));
   return STATUTS[Math.min(...idxs)];
 }
 
@@ -449,6 +456,7 @@ function renderCommandes(){
   listEl.innerHTML = entries.map(([key,o])=>{
     const g = statutGlobalOrder(o);
     const lignes = Object.entries(o.lignes||{});
+    const toutesAnnulees = lignes.length>0 && lignes.every(([,l])=>l.annulee);
     return `
       <div class="order-card">
         <div class="order-head" onclick="toggleOrder('${key}')">
@@ -465,13 +473,31 @@ function renderCommandes(){
         <div class="order-lines" id="lines-${key}">
           ${o.demandeModification ? `<div class="modif-flag" style="display:block;margin:8px 0;">Demande : "${o.messageDemandeModification||''}" — <a href="mailto:${o.client?.email}">contacter le client</a></div>` : ""}
           ${lignes.map(([lid,l])=>`
-            <div class="line-row">
-              <span>${l.articleLabel} (${l.taille}) x${l.qty}${l.supplementNom?` — flocage "${l.nomTireur}"`:""} — ${l.prixTotal}€</span>
-              <select onchange="changeLigneStatut('${key}','${lid}',this.value)">
-                ${STATUTS.map(s=>`<option value="${s}" ${l.statut===s?"selected":""}>${STATUT_LABELS[s]}</option>`).join("")}
-              </select>
+            <div class="line-row ${l.annulee?'annulee':''}">
+              <span class="line-desc">
+                ${l.articleLabel} (${l.taille})${l.supplementNom?` — flocage "${l.nomTireur}"`:""} — ${l.prixTotal}€
+                ${l.annulee ? ' <b style="color:#b02a37;">· annulée</b>' : ''}
+              </span>
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <label style="font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:4px;">
+                  Qté
+                  <input type="number" class="qty-input" min="1" max="50" value="${l.qty}" ${l.annulee?'disabled':''}
+                    onchange="changeLigneQty('${key}','${lid}', this.value)">
+                </label>
+                <select onchange="changeLigneStatut('${key}','${lid}',this.value)" ${l.annulee?'disabled':''}>
+                  ${STATUTS.map(s=>`<option value="${s}" ${l.statut===s?"selected":""}>${STATUT_LABELS[s]}</option>`).join("")}
+                </select>
+                <button class="btn btn-small ${l.annulee?'btn-outline':'btn-danger'}" onclick="toggleLigneAnnulee('${key}','${lid}', ${!l.annulee})">
+                  ${l.annulee ? 'Réactiver' : 'Annuler'}
+                </button>
+              </div>
             </div>
           `).join("")}
+          ${!toutesAnnulees ? `
+            <div style="margin-top:10px;text-align:right;">
+              <button class="btn btn-danger btn-small" onclick="annulerCommandeEntiere('${key}')">🗑 Annuler toute la commande</button>
+            </div>
+          ` : ""}
         </div>
       </div>
     `;
@@ -489,13 +515,63 @@ async function changeLigneStatut(orderKey, ligneId, statut){
   toast("Statut mis à jour.");
 }
 
+async function recomputeOrderTotal(orderKey){
+  const order = commandes[orderKey];
+  const total = Object.values(order.lignes||{})
+    .filter(l=>!l.annulee)
+    .reduce((s,l)=>s+(l.prixTotal||0),0);
+  await fbSet(`boutique/commandes/${orderKey}/totalCommande`, total);
+  order.totalCommande = total;
+}
+
+async function changeLigneQty(orderKey, ligneId, newQtyRaw){
+  const newQty = parseInt(newQtyRaw);
+  if(isNaN(newQty) || newQty < 1){
+    toast("Quantité invalide.");
+    renderCommandes();
+    return;
+  }
+  const order = commandes[orderKey];
+  const ligne = order.lignes[ligneId];
+  const prixTotal = ligne.prixUnitaire * newQty;
+  await fbUpdate(`boutique/commandes/${orderKey}/lignes/${ligneId}`, { qty: newQty, prixTotal });
+  ligne.qty = newQty;
+  ligne.prixTotal = prixTotal;
+  await recomputeOrderTotal(orderKey);
+  renderCommandes(); renderStats(); renderLignesACommander();
+  toast("Quantité mise à jour.");
+}
+
+async function toggleLigneAnnulee(orderKey, ligneId, annulee){
+  if(annulee && !confirm("Annuler cette ligne de commande ?")) return;
+  await fbSet(`boutique/commandes/${orderKey}/lignes/${ligneId}/annulee`, annulee);
+  commandes[orderKey].lignes[ligneId].annulee = annulee;
+  await recomputeOrderTotal(orderKey);
+  renderCommandes(); renderStats(); renderLignesACommander();
+  toast(annulee ? "Ligne annulée." : "Ligne réactivée.");
+}
+
+async function annulerCommandeEntiere(orderKey){
+  if(!confirm("Annuler TOUTE la commande ? Chaque ligne pourra être réactivée individuellement ensuite si besoin.")) return;
+  const order = commandes[orderKey];
+  const updates = {};
+  Object.keys(order.lignes||{}).forEach(lid=>{
+    updates[`boutique/commandes/${orderKey}/lignes/${lid}/annulee`] = true;
+  });
+  await fbUpdateRoot(updates);
+  Object.values(order.lignes||{}).forEach(l=>{ l.annulee = true; });
+  await recomputeOrderTotal(orderKey);
+  renderCommandes(); renderStats(); renderLignesACommander();
+  toast("Commande annulée.");
+}
+
 /* ==================== ONGLET BONS DE COMMANDE ==================== */
 function renderLignesACommander(){
   const zone = document.getElementById("lignes-a-commander");
   let rows = [];
   Object.entries(commandes).forEach(([orderKey,o])=>{
     Object.entries(o.lignes||{}).forEach(([lid,l])=>{
-      if((l.statut||"commande")==="commande"){
+      if((l.statut||"commande")==="commande" && !l.annulee){
         rows.push({orderKey, orderNum:o.numero, client:`${o.client?.prenom} ${o.client?.nom}`, lid, ...l});
       }
     });

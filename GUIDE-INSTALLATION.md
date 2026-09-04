@@ -54,8 +54,13 @@ Puis dans l'onglet **Content**, basculez en mode **"Code editor"** (icône `</>`
 contenu par simplement :
 
 ```html
-{{content}}
+{{{content}}}
 ```
+
+⚠️ **Important** : bien mettre **trois** accolades de chaque côté (`{{{` et `}}}`), pas deux. EmailJS
+utilise un moteur de type Mustache : `{{content}}` (2 accolades) échappe le HTML et l'affiche comme du
+texte brut illisible, alors que `{{{content}}}` (3 accolades) l'insère tel quel, ce qui est ce qu'on veut
+ici puisque `content` contient déjà du HTML complet généré par le site.
 
 C'est tout. Le HTML complet (bandeau, tableau, couleurs...) est déjà généré par le site à chaque envoi
 et transmis dans la variable `content` — vous n'avez rien d'autre à écrire dans EmailJS.
