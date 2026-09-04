@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Back Office Boutique — BO Escrime</title>
+<link rel="icon" href="https://assets.zyrosite.com/TwBwKXLriE0GFu9P/logosmall-BerhlkgaFJDlPwO1.png">
+
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+<style>
+:root{
+  --bordeaux:#7a1236; --rose:#c81d5c; --bg:#f5f3f4; --card:#fff; --text:#241019;
+  --muted:#7a6b71; --border:#e5dde0; --ok:#1c8a4e; --warn:#c88a1d; --info:#2c6fbb; --radius:12px;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);}
+header.top{background:linear-gradient(120deg,var(--bordeaux),var(--rose));color:#fff;padding:14px 16px;display:flex;align-items:center;gap:12px;}
+header.top img{height:38px;}
+header.top h1{font-size:1.05rem;margin:0;}
+header.top .sub{font-size:.75rem;opacity:.85;}
+
+#login-screen{max-width:340px;margin:80px auto;background:var(--card);padding:26px;border-radius:var(--radius);box-shadow:0 2px 10px rgba(0,0,0,.08);text-align:center;}
+#login-screen img{height:50px;margin-bottom:10px;}
+#login-screen input{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin:12px 0;font-size:1rem;text-align:center;}
+#login-screen button{width:100%;padding:11px;border:none;border-radius:8px;background:var(--bordeaux);color:#fff;font-weight:600;cursor:pointer;}
+#login-error{color:#b02a37;font-size:.82rem;min-height:18px;}
+
+#app{display:none;max-width:1100px;margin:0 auto;padding:14px;}
+
+.tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:16px;border-bottom:2px solid var(--border);}
+.tab-btn{
+  padding:10px 14px;border:none;background:none;font-size:.88rem;font-weight:600;color:var(--muted);
+  cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;
+}
+.tab-btn.active{color:var(--bordeaux);border-bottom-color:var(--bordeaux);}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;}
+.card h3{margin:0 0 10px;font-size:.95rem;color:var(--bordeaux);}
+
+.btn{border:none;border-radius:8px;padding:9px 14px;font-size:.85rem;font-weight:600;cursor:pointer;}
+.btn-primary{background:var(--bordeaux);color:#fff;}
+.btn-outline{background:#fff;border:1px solid var(--bordeaux);color:var(--bordeaux);}
+.btn-ok{background:var(--ok);color:#fff;}
+.btn-warn{background:var(--warn);color:#fff;}
+.btn-danger{background:#b02a37;color:#fff;}
+.btn-small{padding:5px 10px;font-size:.78rem;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+
+input[type=text],input[type=email],input[type=tel],select,textarea{
+  padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:.85rem;width:100%;font-family:inherit;
+}
+label.fl{display:block;font-size:.75rem;color:var(--muted);margin-bottom:3px;}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:10px;}
+
+table{width:100%;border-collapse:collapse;font-size:.82rem;}
+th,td{padding:7px 8px;border-bottom:1px solid var(--border);text-align:left;}
+th{color:var(--muted);font-weight:600;font-size:.72rem;text-transform:uppercase;}
+
+.status-pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:700;color:#fff;white-space:nowrap;}
+.status-commande{background:#8a8a8a;}
+.status-attente_fournisseur{background:var(--warn);}
+.status-disponible_salle{background:var(--ok);}
+
+.order-card{border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;}
+.order-head{
+  padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;
+  cursor:pointer;background:#fbfafb;
+}
+.order-lines{padding:0 12px 12px;display:none;}
+.order-lines.show{display:block;}
+.line-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-bottom:1px dashed var(--border);font-size:.82rem;flex-wrap:wrap;}
+.line-row:last-child{border-bottom:none;}
+.modif-flag{background:#fdecea;color:#b02a37;font-size:.72rem;padding:3px 8px;border-radius:6px;font-weight:600;}
+
+.filters{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.filters select,.filters input{width:auto;min-width:150px;}
+
+.stat-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+.stat-box{flex:1;min-width:120px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;}
+.stat-box .num{font-size:1.4rem;font-weight:700;color:var(--bordeaux);}
+.stat-box .lbl{font-size:.72rem;color:var(--muted);}
+
+.select-line{display:flex;align-items:center;gap:8px;}
+.select-line input[type=checkbox]{width:16px;height:16px;accent-color:var(--rose);}
+
+.bc-preview{background:#fbfafb;border:1px dashed var(--border);border-radius:10px;padding:12px;margin-top:10px;}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--bordeaux);color:#fff;padding:10px 18px;border-radius:8px;font-size:.85rem;z-index:200;display:none;}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <img src="https://assets.zyrosite.com/TwBwKXLriE0GFu9P/logosmall-BerhlkgaFJDlPwO1.png" alt="BO Escrime">
+  <h3 style="margin:6px 0 0;color:var(--bordeaux);">Back Office Boutique</h3>
+  <input type="password" id="pwd-input" placeholder="Mot de passe">
+  <div id="login-error"></div>
+  <button onclick="checkPassword()">Accéder</button>
+</div>
+
+<div id="app">
+  <header class="top">
+    <img src="https://assets.zyrosite.com/TwBwKXLriE0GFu9P/logosmall-BerhlkgaFJDlPwO1.png" alt="">
+    <div style="flex:1;">
+      <h1>Back Office Boutique</h1>
+      <div class="sub">BO Escrime — gestion des commandes textile</div>
+    </div>
+    <button class="btn btn-outline btn-small" style="background:#fff;" onclick="refreshAll()">🔄 Actualiser</button>
+  </header>
+
+  <div style="padding:14px 14px 0;max-width:1100px;margin:0 auto;">
+    <div class="stat-row" id="stats"></div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('commandes')">📦 Commandes</button>
+      <button class="tab-btn" onclick="showTab('bc')">📝 Bons de commande</button>
+      <button class="tab-btn" onclick="showTab('reception')">🚚 Réceptions</button>
+      <button class="tab-btn" onclick="showTab('fournisseurs')">🏭 Fournisseurs</button>
+    </div>
+
+    <!-- ONGLET COMMANDES -->
+    <div class="tab-content active" id="tab-commandes">
+      <div class="card">
+        <div class="filters">
+          <select id="filter-statut" onchange="renderCommandes()">
+            <option value="">Tous les statuts</option>
+            <option value="commande">Commandé</option>
+            <option value="attente_fournisseur">En attente fournisseur</option>
+            <option value="disponible_salle">À disposition à la salle</option>
+          </select>
+          <input type="text" id="filter-search" placeholder="Recherche nom / n° commande" oninput="renderCommandes()">
+        </div>
+        <div id="commandes-list"></div>
+      </div>
+    </div>
+
+    <!-- ONGLET BONS DE COMMANDE -->
+    <div class="tab-content" id="tab-bc">
+      <div class="card">
+        <h3>Nouveau bon de commande</h3>
+        <p style="font-size:.8rem;color:var(--muted);">
+          Sélectionnez les lignes commandées non encore transmises au fournisseur, puis choisissez le fournisseur destinataire.
+        </p>
+        <div id="lignes-a-commander"></div>
+
+        <div class="form-grid" style="margin-top:14px;">
+          <div>
+            <label class="fl">Fournisseur enregistré</label>
+            <select id="bc-fournisseur-select" onchange="fillFournisseurFields()">
+              <option value="">— Nouveau fournisseur —</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div><label class="fl">Nom fournisseur *</label><input type="text" id="bc-f-nom"></div>
+          <div><label class="fl">Email fournisseur *</label><input type="email" id="bc-f-email"></div>
+          <div><label class="fl">Téléphone</label><input type="tel" id="bc-f-tel"></div>
+          <div><label class="fl">Contact</label><input type="text" id="bc-f-contact"></div>
+        </div>
+        <label style="font-size:.8rem;display:flex;gap:6px;align-items:center;margin-bottom:10px;">
+          <input type="checkbox" id="bc-f-save" checked> Mémoriser ce fournisseur (max 10)
+        </label>
+
+        <button class="btn btn-primary" onclick="genererBC()">Générer le bon de commande</button>
+        <div id="bc-preview-zone"></div>
+      </div>
+
+      <div class="card">
+        <h3>Bons de commande — brouillons</h3>
+        <div id="bc-brouillons-list"></div>
+      </div>
+
+      <div class="card">
+        <h3>Bons de commande envoyés (en attente de réception)</h3>
+        <div id="bc-envoyes-list"></div>
+      </div>
+    </div>
+
+    <!-- ONGLET RECEPTION -->
+    <div class="tab-content" id="tab-reception">
+      <div class="card">
+        <h3>Réceptions fournisseur</h3>
+        <p style="font-size:.8rem;color:var(--muted);">
+          Marquez un bon de commande comme reçu dès que les articles arrivent. Les commandes clients concernées
+          passeront automatiquement à "à disposition à la salle" et un e-mail leur sera envoyé.
+        </p>
+        <div id="reception-list"></div>
+      </div>
+      <div class="card">
+        <h3>Historique des réceptions</h3>
+        <div id="reception-historique"></div>
+      </div>
+    </div>
+
+    <!-- ONGLET FOURNISSEURS -->
+    <div class="tab-content" id="tab-fournisseurs">
+      <div class="card">
+        <h3>Ajouter un fournisseur (<span id="fourn-count">0</span>/10)</h3>
+        <div class="form-grid">
+          <div><label class="fl">Nom *</label><input type="text" id="new-f-nom"></div>
+          <div><label class="fl">Email *</label><input type="email" id="new-f-email"></div>
+          <div><label class="fl">Téléphone</label><input type="tel" id="new-f-tel"></div>
+          <div><label class="fl">Contact</label><input type="text" id="new-f-contact"></div>
+        </div>
+        <button class="btn btn-primary" id="btn-add-fourn" onclick="ajouterFournisseur()">Ajouter</button>
+      </div>
+      <div class="card">
+        <h3>Fournisseurs enregistrés</h3>
+        <table>
+          <thead><tr><th>Nom</th><th>Email</th><th>Téléphone</th><th>Contact</th><th></th></tr></thead>
+          <tbody id="fournisseurs-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ==================== CONFIG ==================== */
+const ADMIN_PASSWORD = "Boutique";
+
+// Même base Firebase que le reste des outils du club, en accès direct REST
+// (comme galerie-bo-escrime) — aucune clé API nécessaire.
+const FIREBASE_URL = "https://bo-escrime-default-rtdb.europe-west1.firebasedatabase.app";
+
+async function fbGet(path){
+  const r = await fetch(`${FIREBASE_URL}/${path}.json`);
+  if(!r.ok) throw new Error("Firebase lecture " + r.status);
+  return r.json();
+}
+async function fbSet(path, data){
+  const r = await fetch(`${FIREBASE_URL}/${path}.json`, {
+    method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify(data)
+  });
+  if(!r.ok) throw new Error("Firebase écriture " + r.status);
+  return r.json();
+}
+async function fbPush(path, data){
+  const r = await fetch(`${FIREBASE_URL}/${path}.json`, {
+    method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(data)
+  });
+  if(!r.ok) throw new Error("Firebase écriture " + r.status);
+  return r.json(); // { name: "-Nxxxxx" }
+}
+async function fbUpdate(path, data){
+  const r = await fetch(`${FIREBASE_URL}/${path}.json`, {
+    method:"PATCH", headers:{"Content-Type":"application/json"}, body: JSON.stringify(data)
+  });
+  if(!r.ok) throw new Error("Firebase écriture " + r.status);
+  return r.json();
+}
+// Mise à jour multi-chemins depuis la racine (équivalent d'un "update" Firebase multi-path)
+async function fbUpdateRoot(updatesObj){
+  const r = await fetch(`${FIREBASE_URL}/.json`, {
+    method:"PATCH", headers:{"Content-Type":"application/json"}, body: JSON.stringify(updatesObj)
+  });
+  if(!r.ok) throw new Error("Firebase écriture " + r.status);
+  return r.json();
+}
+async function fbDelete(path){
+  const r = await fetch(`${FIREBASE_URL}/${path}.json`, { method:"DELETE" });
+  if(!r.ok) throw new Error("Firebase suppression " + r.status);
+  return r.json();
+}
+
+const EMAILJS_PUBLIC_KEY = "z-4obQNdAye0QlTcm";
+const EMAILJS_SERVICE_ID = "service_s4wmzdc";
+// Même template unique que index.html (compte EmailJS limité à 2 templates)
+const EMAILJS_TEMPLATE_ID = "template_94141gr";
+emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+
+const CLUB_EMAIL = "escrime@biarritzolympique.fr";
+
+function buildEmailShell(bodyHtml){
+  return `
+<div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;background:#f7f5f6;">
+  <div style="background:linear-gradient(120deg,#7a1236,#c81d5c);padding:24px 20px;text-align:center;">
+    <img src="https://assets.zyrosite.com/TwBwKXLriE0GFu9P/logosmall-BerhlkgaFJDlPwO1.png" alt="BO Escrime" style="height:50px;margin-bottom:8px;">
+    <div style="color:#ffffff;font-size:20px;font-weight:bold;">BO Escrime</div>
+    <div style="color:#f6d9e3;font-size:13px;">Boutique du club</div>
+  </div>
+  <div style="background:#ffffff;padding:26px 24px;">
+    ${bodyHtml}
+  </div>
+  <div style="text-align:center;padding:16px;font-size:12px;color:#7a6b71;">
+    Biarritz Olympique Escrime — <a href="mailto:contact@bo-escrime.fr" style="color:#7a1236;">contact@bo-escrime.fr</a>
+  </div>
+</div>`;
+}
+
+function sendBoutiqueEmail(to_email, subject, bodyHtml, reply_to){
+  return emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+    to_email,
+    subject,
+    reply_to: reply_to || CLUB_EMAIL,
+    content: buildEmailShell(bodyHtml)
+  });
+}
+
+const STATUTS = ["commande","attente_fournisseur","disponible_salle"];
+const STATUT_LABELS = {
+  commande:"Commandé",
+  attente_fournisseur:"En attente fournisseur",
+  disponible_salle:"À disposition à la salle"
+};
+
+function escapeHtml(str){
+  return String(str||"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+// Lignes HTML pour l'email fournisseur (Article / Taille / Quantité)
+function groupesToHtmlRows(groupes){
+  return (groupes||[]).map(g => `
+    <tr>
+      <td style="padding:8px 10px;border-bottom:1px solid #eee;">${escapeHtml(g.articleLabel)}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;">${escapeHtml(g.taille)}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;">${g.quantite}</td>
+    </tr>`).join("");
+}
+// Lignes HTML pour l'email client "commande prête" (Article / Qté / Prix)
+function lignesPretesToHtmlRows(lignes){
+  return lignes.map(l => `
+    <tr>
+      <td style="padding:8px 10px;border-bottom:1px solid #eee;">
+        ${escapeHtml(l.articleLabel)} (${escapeHtml(l.taille)})
+        ${l.supplementNom ? `<br><span style="color:#7a6b71;font-size:12px;">Flocage dos : "${escapeHtml(l.nomTireur)}"</span>` : ""}
+      </td>
+      <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;">${l.qty}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right;">${l.prixTotal} €</td>
+    </tr>`).join("");
+}
+
+/* ==================== LOGIN ==================== */
+function checkPassword(){
+  const val = document.getElementById("pwd-input").value;
+  if(val === ADMIN_PASSWORD){
+    sessionStorage.setItem("boutique_admin_ok","1");
+    document.getElementById("login-screen").style.display="none";
+    document.getElementById("app").style.display="block";
+    initApp();
+  }else{
+    document.getElementById("login-error").textContent = "Mot de passe incorrect.";
+  }
+}
+document.getElementById("pwd-input").addEventListener("keydown", e=>{ if(e.key==="Enter") checkPassword(); });
+if(sessionStorage.getItem("boutique_admin_ok")==="1"){
+  document.getElementById("login-screen").style.display="none";
+  document.getElementById("app").style.display="block";
+  initApp();
+}
+
+/* ==================== TABS ==================== */
+function showTab(name){
+  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+  document.querySelectorAll(".tab-content").forEach(t=>t.classList.remove("active"));
+  event.target.classList.add("active");
+  document.getElementById("tab-"+name).classList.add("active");
+}
+
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.style.display = "block";
+  setTimeout(()=>t.style.display="none", 3200);
+}
+
+/* ==================== DATA ==================== */
+let commandes = {};      // orderKey -> order
+let fournisseurs = {};   // fId -> fournisseur
+let bonsCommande = {};   // bcId -> bc
+
+async function refreshAll(){
+  try{
+    const [c, f, b] = await Promise.all([
+      fbGet("boutique/commandes"),
+      fbGet("boutique/fournisseurs"),
+      fbGet("boutique/bonsCommande")
+    ]);
+    commandes = c || {};
+    fournisseurs = f || {};
+    bonsCommande = b || {};
+    renderCommandes();
+    renderLignesACommander();
+    renderStats();
+    renderFournisseurs();
+    renderBCLists();
+    renderReception();
+  }catch(err){
+    console.error(err);
+    toast("⚠️ Erreur de connexion à la base de données.");
+  }
+}
+
+function initApp(){
+  refreshAll();
+  // Rafraîchissement périodique (pas de temps réel en REST simple)
+  setInterval(refreshAll, 20000);
+}
+
+function statutGlobalOrder(order){
+  const lignes = Object.values(order.lignes || {});
+  if(lignes.length===0) return "commande";
+  const idxs = lignes.map(l=>STATUTS.indexOf(l.statut||"commande"));
+  return STATUTS[Math.min(...idxs)];
+}
+
+/* ==================== STATS ==================== */
+function renderStats(){
+  const orders = Object.values(commandes);
+  const total = orders.length;
+  const ca = orders.reduce((s,o)=>s+(o.totalCommande||0),0);
+  const enAttenteFournisseur = orders.filter(o=>statutGlobalOrder(o)==="attente_fournisseur").length;
+  const pretes = orders.filter(o=>statutGlobalOrder(o)==="disponible_salle").length;
+  document.getElementById("stats").innerHTML = `
+    <div class="stat-box"><div class="num">${total}</div><div class="lbl">Commandes</div></div>
+    <div class="stat-box"><div class="num">${ca} €</div><div class="lbl">Chiffre d'affaires</div></div>
+    <div class="stat-box"><div class="num">${enAttenteFournisseur}</div><div class="lbl">Attente fournisseur</div></div>
+    <div class="stat-box"><div class="num">${pretes}</div><div class="lbl">Prêtes (100%)</div></div>
+  `;
+}
+
+/* ==================== ONGLET COMMANDES ==================== */
+function renderCommandes(){
+  const filterStatut = document.getElementById("filter-statut").value;
+  const search = (document.getElementById("filter-search").value||"").toLowerCase();
+  const listEl = document.getElementById("commandes-list");
+
+  let entries = Object.entries(commandes).sort((a,b)=> (b[1].dateCommande||"").localeCompare(a[1].dateCommande||""));
+
+  entries = entries.filter(([key,o])=>{
+    const g = statutGlobalOrder(o);
+    if(filterStatut && g!==filterStatut) return false;
+    if(search){
+      const hay = `${o.numero} ${o.client?.nom} ${o.client?.prenom} ${o.client?.email}`.toLowerCase();
+      if(!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  if(entries.length===0){
+    listEl.innerHTML = `<p style="color:var(--muted);font-size:.85rem;">Aucune commande.</p>`;
+    return;
+  }
+
+  listEl.innerHTML = entries.map(([key,o])=>{
+    const g = statutGlobalOrder(o);
+    const lignes = Object.entries(o.lignes||{});
+    return `
+      <div class="order-card">
+        <div class="order-head" onclick="toggleOrder('${key}')">
+          <div>
+            <b>${o.numero}</b> — ${o.client?.prenom} ${o.client?.nom}
+            <div style="font-size:.75rem;color:var(--muted);">${o.client?.mobile} · ${o.client?.email}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            ${o.demandeModification ? `<span class="modif-flag">⚠️ demande client</span>` : ""}
+            <span class="status-pill status-${g}">${STATUT_LABELS[g]}</span>
+            <b>${o.totalCommande} €</b>
+          </div>
+        </div>
+        <div class="order-lines" id="lines-${key}">
+          ${o.demandeModification ? `<div class="modif-flag" style="display:block;margin:8px 0;">Demande : "${o.messageDemandeModification||''}" — <a href="mailto:${o.client?.email}">contacter le client</a></div>` : ""}
+          ${lignes.map(([lid,l])=>`
+            <div class="line-row">
+              <span>${l.articleLabel} (${l.taille}) x${l.qty}${l.supplementNom?` — flocage "${l.nomTireur}"`:""} — ${l.prixTotal}€</span>
+              <select onchange="changeLigneStatut('${key}','${lid}',this.value)">
+                ${STATUTS.map(s=>`<option value="${s}" ${l.statut===s?"selected":""}>${STATUT_LABELS[s]}</option>`).join("")}
+              </select>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function toggleOrder(key){
+  document.getElementById("lines-"+key).classList.toggle("show");
+}
+
+async function changeLigneStatut(orderKey, ligneId, statut){
+  await fbSet(`boutique/commandes/${orderKey}/lignes/${ligneId}/statut`, statut);
+  commandes[orderKey].lignes[ligneId].statut = statut;
+  renderCommandes(); renderStats(); renderLignesACommander();
+  toast("Statut mis à jour.");
+}
+
+/* ==================== ONGLET BONS DE COMMANDE ==================== */
+function renderLignesACommander(){
+  const zone = document.getElementById("lignes-a-commander");
+  let rows = [];
+  Object.entries(commandes).forEach(([orderKey,o])=>{
+    Object.entries(o.lignes||{}).forEach(([lid,l])=>{
+      if((l.statut||"commande")==="commande"){
+        rows.push({orderKey, orderNum:o.numero, client:`${o.client?.prenom} ${o.client?.nom}`, lid, ...l});
+      }
+    });
+  });
+
+  if(rows.length===0){
+    zone.innerHTML = `<p style="color:var(--muted);font-size:.85rem;">Aucune ligne en attente de commande fournisseur.</p>`;
+    return;
+  }
+
+  zone.innerHTML = `
+    <table>
+      <thead><tr><th></th><th>Commande</th><th>Client</th><th>Article</th><th>Taille</th><th>Qté</th><th>Flocage</th></tr></thead>
+      <tbody>
+        ${rows.map(r=>`
+          <tr>
+            <td><input type="checkbox" class="bc-line-check" data-order="${r.orderKey}" data-lid="${r.lid}" data-article="${r.article}" data-articlelabel="${r.articleLabel}" data-taille="${r.taille}" data-qty="${r.qty}" onchange="updateBCSummary()"></td>
+            <td>${r.orderNum}</td>
+            <td>${r.client}</td>
+            <td>${r.articleLabel}</td>
+            <td>${r.taille}</td>
+            <td>${r.qty}</td>
+            <td>${r.supplementNom ? '"'+r.nomTireur+'"' : "—"}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+    <div id="bc-summary" style="margin-top:8px;font-size:.82rem;color:var(--muted);"></div>
+  `;
+}
+
+function updateBCSummary(){
+  const checks = [...document.querySelectorAll(".bc-line-check:checked")];
+  const summary = document.getElementById("bc-summary");
+  if(checks.length===0){ summary.innerHTML=""; return; }
+  const groups = {};
+  checks.forEach(c=>{
+    const key = c.dataset.article+"|"+c.dataset.taille;
+    groups[key] = groups[key] || {label:c.dataset.articlelabel, taille:c.dataset.taille, qty:0};
+    groups[key].qty += parseInt(c.dataset.qty);
+  });
+  summary.innerHTML = "Regroupement : " + Object.values(groups).map(g=>`${g.label} (${g.taille}) ×${g.qty}`).join(" · ");
+}
+
+// fournisseur select (populated on fournisseurs render)
+function fillFournisseurFields(){
+  const id = document.getElementById("bc-fournisseur-select").value;
+  if(!id){
+    document.getElementById("bc-f-nom").value="";
+    document.getElementById("bc-f-email").value="";
+    document.getElementById("bc-f-tel").value="";
+    document.getElementById("bc-f-contact").value="";
+    return;
+  }
+  const f = fournisseurs[id];
+  document.getElementById("bc-f-nom").value = f.nom||"";
+  document.getElementById("bc-f-email").value = f.email||"";
+  document.getElementById("bc-f-tel").value = f.telephone||"";
+  document.getElementById("bc-f-contact").value = f.contact||"";
+}
+
+let lastGeneratedBC = null;
+
+async function genererBC(){
+  const checks = [...document.querySelectorAll(".bc-line-check:checked")];
+  if(checks.length===0){ toast("Sélectionnez au moins une ligne."); return; }
+
+  const fNom = document.getElementById("bc-f-nom").value.trim();
+  const fEmail = document.getElementById("bc-f-email").value.trim();
+  const fTel = document.getElementById("bc-f-tel").value.trim();
+  const fContact = document.getElementById("bc-f-contact").value.trim();
+  if(!fNom || !fEmail){ toast("Nom et email du fournisseur requis."); return; }
+
+  // Sauvegarde fournisseur si demandé
+  const fournisseurSelectId = document.getElementById("bc-fournisseur-select").value;
+  let fournisseurId = fournisseurSelectId || null;
+  if(document.getElementById("bc-f-save").checked && !fournisseurSelectId){
+    const count = Object.keys(fournisseurs).length;
+    if(count >= 10){
+      toast("Limite de 10 fournisseurs atteinte — le fournisseur ne sera pas mémorisé.");
+    }else{
+      const pushRes = await fbPush("boutique/fournisseurs", {nom:fNom, email:fEmail, telephone:fTel, contact:fContact, dateAjout:new Date().toISOString()});
+      fournisseurId = pushRes.name;
+    }
+  }
+
+  // Regroupement
+  const groups = {};
+  const refs = [];
+  checks.forEach(c=>{
+    const key = c.dataset.article+"|"+c.dataset.taille;
+    groups[key] = groups[key] || {article:c.dataset.article, articleLabel:c.dataset.articlelabel, taille:c.dataset.taille, quantite:0, refs:[]};
+    groups[key].quantite += parseInt(c.dataset.qty);
+    groups[key].refs.push({orderKey:c.dataset.order, ligneId:c.dataset.lid});
+    refs.push({orderKey:c.dataset.order, ligneId:c.dataset.lid});
+  });
+
+  const numero = "BC-" + new Date().getFullYear() + "-" + Date.now().toString(36).toUpperCase().slice(-6);
+  const bc = {
+    numero,
+    dateCreation: new Date().toISOString(),
+    fournisseurId: fournisseurId,
+    fournisseur: {nom:fNom, email:fEmail, telephone:fTel, contact:fContact},
+    statut: "brouillon",
+    lignesGroupees: Object.values(groups)
+  };
+  const pushRes = await fbPush("boutique/bonsCommande", bc);
+  const bcKey = pushRes.name;
+  bonsCommande[bcKey] = bc;
+  lastGeneratedBC = {key:bcKey, ...bc};
+
+  document.getElementById("bc-preview-zone").innerHTML = `
+    <div class="bc-preview">
+      <b>${numero}</b> créé (brouillon) — Fournisseur : ${fNom} (${fEmail})<br>
+      ${bc.lignesGroupees.map(g=>`• ${g.articleLabel} (${g.taille}) ×${g.quantite}`).join("<br>")}
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-small" onclick="envoyerBC('${bcKey}')">📧 Envoyer au fournisseur & valider</button>
+        <button class="btn btn-outline btn-small" onclick="window.print()">🖨 Imprimer</button>
+      </div>
+    </div>
+  `;
+  // reset checks
+  checks.forEach(c=>c.checked=false);
+  updateBCSummary();
+  renderBCLists();
+  toast("Bon de commande généré.");
+}
+
+async function envoyerBC(bcId){
+  const bc = bonsCommande[bcId] || lastGeneratedBC;
+  if(!bc) return;
+  const lignesHtml = groupesToHtmlRows(bc.lignesGroupees);
+  const bodyHtml = `
+    <h2 style="color:#7a1236;margin-top:0;">Bon de commande ${bc.numero}</h2>
+    <p>Bonjour ${escapeHtml(bc.fournisseur.nom)},</p>
+    <p>Veuillez trouver ci-dessous notre commande du ${new Date(bc.dateCreation).toLocaleDateString('fr-FR')} :</p>
+    <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+      <thead>
+        <tr style="background:#f7f5f6;">
+          <th style="text-align:left;padding:8px 10px;font-size:12px;color:#7a6b71;text-transform:uppercase;">Article</th>
+          <th style="text-align:center;padding:8px 10px;font-size:12px;color:#7a6b71;text-transform:uppercase;">Taille</th>
+          <th style="text-align:center;padding:8px 10px;font-size:12px;color:#7a6b71;text-transform:uppercase;">Quantité</th>
+        </tr>
+      </thead>
+      <tbody>${lignesHtml}</tbody>
+    </table>
+    <p>Merci de nous confirmer la bonne réception de cette commande.</p>
+    <p>Cordialement,<br>BO Escrime</p>
+  `;
+
+  try{
+    await sendBoutiqueEmail(bc.fournisseur.email, `Bon de commande ${bc.numero} — BO Escrime`, bodyHtml, CLUB_EMAIL);
+  }catch(err){
+    console.error(err);
+    toast("⚠️ Envoi email fournisseur impossible (vérifier config EmailJS). Statuts non modifiés.");
+    return;
+  }
+
+  // Mise à jour BC + lignes commandes -> attente_fournisseur
+  const updates = {};
+  updates[`boutique/bonsCommande/${bcId}/statut`] = "envoye";
+  updates[`boutique/bonsCommande/${bcId}/dateEnvoi`] = new Date().toISOString();
+  (bc.lignesGroupees||[]).forEach(g=>{
+    (g.refs||[]).forEach(r=>{
+      updates[`boutique/commandes/${r.orderKey}/lignes/${r.ligneId}/statut`] = "attente_fournisseur";
+      updates[`boutique/commandes/${r.orderKey}/lignes/${r.ligneId}/bcId`] = bcId;
+    });
+  });
+  await fbUpdateRoot(updates);
+  document.getElementById("bc-preview-zone").innerHTML = "";
+  await refreshAll();
+  toast("Bon de commande envoyé au fournisseur ✅");
+}
+
+function renderBCLists(){
+  const brouillons = Object.entries(bonsCommande).filter(([id,bc])=>bc.statut==="brouillon");
+  const envoyes = Object.entries(bonsCommande).filter(([id,bc])=>bc.statut==="envoye");
+
+  document.getElementById("bc-brouillons-list").innerHTML = brouillons.length===0
+    ? `<p style="color:var(--muted);font-size:.85rem;">Aucun brouillon.</p>`
+    : brouillons.map(([id,bc])=>`
+        <div class="bc-preview">
+          <b>${bc.numero}</b> — ${bc.fournisseur?.nom} (${bc.fournisseur?.email})<br>
+          ${(bc.lignesGroupees||[]).map(g=>`• ${g.articleLabel} (${g.taille}) ×${g.quantite}`).join("<br>")}
+          <div style="margin-top:8px;">
+            <button class="btn btn-primary btn-small" onclick="envoyerBC('${id}')">📧 Envoyer & valider</button>
+          </div>
+        </div>
+      `).join("");
+
+  document.getElementById("bc-envoyes-list").innerHTML = envoyes.length===0
+    ? `<p style="color:var(--muted);font-size:.85rem;">Aucun bon de commande en attente.</p>`
+    : envoyes.map(([id,bc])=>`
+        <div class="bc-preview">
+          <b>${bc.numero}</b> — ${bc.fournisseur?.nom} — envoyé le ${new Date(bc.dateEnvoi).toLocaleDateString('fr-FR')}<br>
+          ${(bc.lignesGroupees||[]).map(g=>`• ${g.articleLabel} (${g.taille}) ×${g.quantite}`).join("<br>")}
+        </div>
+      `).join("");
+}
+
+/* ==================== ONGLET RECEPTION ==================== */
+function renderReception(){
+  const envoyes = Object.entries(bonsCommande).filter(([id,bc])=>bc.statut==="envoye");
+  const recus = Object.entries(bonsCommande).filter(([id,bc])=>bc.statut==="receptionne");
+
+  document.getElementById("reception-list").innerHTML = envoyes.length===0
+    ? `<p style="color:var(--muted);font-size:.85rem;">Aucun bon de commande en attente de réception.</p>`
+    : envoyes.map(([id,bc])=>`
+        <div class="bc-preview">
+          <b>${bc.numero}</b> — ${bc.fournisseur?.nom} — envoyé le ${new Date(bc.dateEnvoi).toLocaleDateString('fr-FR')}<br>
+          ${(bc.lignesGroupees||[]).map(g=>`• ${g.articleLabel} (${g.taille}) ×${g.quantite}`).join("<br>")}
+          <div style="margin-top:8px;">
+            <button class="btn btn-ok btn-small" onclick="marquerRecu('${id}')">✅ Marquer reçu & prévenir les clients</button>
+          </div>
+        </div>
+      `).join("");
+
+  document.getElementById("reception-historique").innerHTML = recus.length===0
+    ? `<p style="color:var(--muted);font-size:.85rem;">Aucune réception enregistrée.</p>`
+    : recus.map(([id,bc])=>`
+        <div class="bc-preview">
+          <b>${bc.numero}</b> — reçu le ${new Date(bc.dateReception).toLocaleDateString('fr-FR')} — ${bc.fournisseur?.nom}
+        </div>
+      `).join("");
+}
+
+async function marquerRecu(bcId){
+  const bc = bonsCommande[bcId];
+  if(!bc) return;
+
+  const updates = {};
+  updates[`boutique/bonsCommande/${bcId}/statut`] = "receptionne";
+  updates[`boutique/bonsCommande/${bcId}/dateReception`] = new Date().toISOString();
+
+  // Regrouper par commande client les lignes concernées
+  const parOrder = {};
+  (bc.lignesGroupees||[]).forEach(g=>{
+    (g.refs||[]).forEach(r=>{
+      updates[`boutique/commandes/${r.orderKey}/lignes/${r.ligneId}/statut`] = "disponible_salle";
+      parOrder[r.orderKey] = parOrder[r.orderKey] || [];
+      const order = commandes[r.orderKey];
+      const ligne = order?.lignes?.[r.ligneId];
+      if(ligne) parOrder[r.orderKey].push(ligne);
+    });
+  });
+
+  await fbUpdateRoot(updates);
+
+  // Emails clients
+  for(const [orderKey, lignes] of Object.entries(parOrder)){
+    const order = commandes[orderKey];
+    if(!order) continue;
+    const lignesTxt = lignesPretesToHtmlRows(lignes);
+    const montant = lignes.reduce((s,l)=>s+l.prixTotal,0);
+    const bodyHtml = `
+      <h2 style="color:#1c8a4e;margin-top:0;">🎉 Votre commande est prête !</h2>
+      <p>Bonjour ${escapeHtml(order.client.prenom)} ${escapeHtml(order.client.nom)},</p>
+      <p>Bonne nouvelle : votre commande <b>${order.numero}</b> (ou une partie) est arrivée et vous attend à la salle !</p>
+      <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+        <thead>
+          <tr style="background:#f7f5f6;">
+            <th style="text-align:left;padding:8px 10px;font-size:12px;color:#7a6b71;text-transform:uppercase;">Article</th>
+            <th style="text-align:center;padding:8px 10px;font-size:12px;color:#7a6b71;text-transform:uppercase;">Qté</th>
+            <th style="text-align:right;padding:8px 10px;font-size:12px;color:#7a6b71;text-transform:uppercase;">Prix</th>
+          </tr>
+        </thead>
+        <tbody>${lignesTxt}</tbody>
+      </table>
+      <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:12px 14px;font-size:14px;color:#1c8a4e;">
+        Montant à régler à la récupération : <b>${montant} €</b> (espèces ou chèque, sur place)
+      </div>
+    `;
+    sendBoutiqueEmail(order.client.email, `Votre commande ${order.numero} est disponible à la salle !`, bodyHtml, CLUB_EMAIL)
+      .catch(err=>console.error("EmailJS client prêt:", err));
+  }
+
+  await refreshAll();
+  toast("Réception enregistrée, clients notifiés ✅");
+}
+
+/* ==================== ONGLET FOURNISSEURS ==================== */
+function renderFournisseurs(){
+  const entries = Object.entries(fournisseurs);
+  document.getElementById("fourn-count").textContent = entries.length;
+  document.getElementById("btn-add-fourn").disabled = entries.length >= 10;
+
+  document.getElementById("fournisseurs-table").innerHTML = entries.length===0
+    ? `<tr><td colspan="5" style="color:var(--muted);">Aucun fournisseur enregistré.</td></tr>`
+    : entries.map(([id,f])=>`
+        <tr>
+          <td>${f.nom}</td><td>${f.email}</td><td>${f.telephone||"—"}</td><td>${f.contact||"—"}</td>
+          <td><button class="btn btn-danger btn-small" onclick="supprimerFournisseur('${id}')">Suppr.</button></td>
+        </tr>
+      `).join("");
+
+  // select for BC tab
+  const sel = document.getElementById("bc-fournisseur-select");
+  sel.innerHTML = `<option value="">— Nouveau fournisseur —</option>` +
+    entries.map(([id,f])=>`<option value="${id}">${f.nom}</option>`).join("");
+}
+
+async function ajouterFournisseur(){
+  const nom = document.getElementById("new-f-nom").value.trim();
+  const email = document.getElementById("new-f-email").value.trim();
+  const tel = document.getElementById("new-f-tel").value.trim();
+  const contact = document.getElementById("new-f-contact").value.trim();
+  if(!nom || !email){ toast("Nom et email requis."); return; }
+  if(Object.keys(fournisseurs).length >= 10){ toast("Limite de 10 fournisseurs atteinte."); return; }
+
+  await fbPush("boutique/fournisseurs", {nom, email, telephone:tel, contact, dateAjout:new Date().toISOString()});
+  document.getElementById("new-f-nom").value="";
+  document.getElementById("new-f-email").value="";
+  document.getElementById("new-f-tel").value="";
+  document.getElementById("new-f-contact").value="";
+  await refreshAll();
+  toast("Fournisseur ajouté.");
+}
+
+async function supprimerFournisseur(id){
+  if(!confirm("Supprimer ce fournisseur ?")) return;
+  await fbDelete(`boutique/fournisseurs/${id}`);
+  await refreshAll();
+  toast("Fournisseur supprimé.");
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boutique BO Escrime</title>
+<link rel="icon" href="https://assets.zyrosite.com/TwBwKXLriE0GFu9P/logosmall-BerhlkgaFJDlPwO1.png">
+
+<!-- EmailJS -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+<style>
+:root{
+  --bordeaux:#7a1236;
+  --rose:#c81d5c;
+  --bg:#f7f5f6;
+  --card:#ffffff;
+  --text:#241019;
+  --muted:#7a6b71;
+  --border:#e7dfe2;
+  --ok:#1c8a4e;
+  --warn:#c88a1d;
+  --radius:14px;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  padding-bottom:80px;
+}
+header.top{
+  background:linear-gradient(120deg,var(--bordeaux),var(--rose));
+  color:#fff;
+  padding:18px 16px 22px;
+  text-align:center;
+}
+header.top img{height:56px;display:block;margin:0 auto 10px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.25));}
+header.top h1{margin:0;font-size:1.4rem;letter-spacing:.5px;}
+header.top p{margin:6px 0 0;font-size:.85rem;opacity:.92;}
+
+.wrap{max-width:960px;margin:0 auto;padding:16px;}
+
+.notice{
+  background:#fff3e0;border:1px solid #f0c987;color:#7a5300;
+  border-radius:var(--radius);padding:12px 14px;font-size:.85rem;margin-bottom:18px;
+}
+.notice b{display:block;margin-bottom:4px;}
+
+h2.section-title{
+  font-size:1.05rem;color:var(--bordeaux);margin:28px 0 12px;
+  border-left:4px solid var(--rose);padding-left:10px;
+}
+
+.grid-products{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;
+}
+.product-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  overflow:hidden;display:flex;flex-direction:column;
+  box-shadow:0 1px 3px rgba(0,0,0,.05);
+}
+.product-card img{width:100%;aspect-ratio:1/1;object-fit:cover;background:#eee;}
+.product-body{padding:12px 14px 16px;display:flex;flex-direction:column;gap:8px;flex:1;}
+.product-body h3{margin:0;font-size:1rem;}
+.price{font-weight:700;color:var(--bordeaux);font-size:1.1rem;}
+.field-row{display:flex;flex-direction:column;gap:4px;font-size:.82rem;color:var(--muted);}
+select, input[type=text], input[type=email], input[type=tel]{
+  padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:.9rem;
+  background:#fff;color:var(--text);width:100%;
+}
+.check-row{display:flex;align-items:center;gap:8px;font-size:.85rem;margin-top:2px;}
+.check-row input[type=checkbox]{width:17px;height:17px;accent-color:var(--rose);}
+.name-input{display:none;margin-top:6px;}
+.name-input.show{display:block;}
+.qty-row{display:flex;align-items:center;gap:10px;margin-top:2px;}
+.qty-row button{
+  width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:#fff;
+  font-size:1rem;cursor:pointer;color:var(--bordeaux);
+}
+.qty-row span{min-width:20px;text-align:center;font-weight:600;}
+.btn{
+  border:none;border-radius:10px;padding:11px 16px;font-size:.92rem;font-weight:600;
+  cursor:pointer;transition:opacity .15s;
+}
+.btn:active{opacity:.8;}
+.btn-primary{background:var(--bordeaux);color:#fff;}
+.btn-primary:hover{background:var(--rose);}
+.btn-outline{background:#fff;border:1px solid var(--bordeaux);color:var(--bordeaux);}
+.btn-block{width:100%;}
+.btn-small{padding:6px 10px;font-size:.8rem;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* Cart */
+#cart-bar{
+  position:fixed;bottom:0;left:0;right:0;background:var(--bordeaux);color:#fff;
+  padding:10px 16px;display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 -2px 10px rgba(0,0,0,.2);z-index:50;
+}
+#cart-bar .info{font-size:.85rem;}
+#cart-bar .total{font-weight:700;font-size:1.05rem;}
+#cart-bar button{background:#fff;color:var(--bordeaux);}
+
+.cart-panel{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px;margin-top:14px;
+}
+.cart-line{
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+  padding:9px 0;border-bottom:1px solid var(--border);font-size:.88rem;
+}
+.cart-line:last-child{border-bottom:none;}
+.cart-line .desc{flex:1;}
+.cart-line .desc small{display:block;color:var(--muted);}
+.cart-line .remove{background:none;border:none;color:#b02a37;font-size:1rem;cursor:pointer;padding:2px 6px;}
+
+/* modal / checkout */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(20,10,15,.55);display:none;
+  align-items:flex-start;justify-content:center;padding:20px 12px;z-index:100;overflow-y:auto;
+}
+.modal-overlay.show{display:flex;}
+.modal{
+  background:#fff;border-radius:var(--radius);max-width:520px;width:100%;padding:22px;
+  margin:20px auto;
+}
+.modal h3{margin-top:0;color:var(--bordeaux);}
+.form-group{margin-bottom:12px;}
+.form-group label{display:block;font-size:.82rem;color:var(--muted);margin-bottom:4px;}
+.captcha-box{
+  background:var(--bg);border:1px dashed var(--border);border-radius:10px;
+  padding:10px 12px;font-size:.9rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.captcha-box input{width:80px;}
+.error-msg{color:#b02a37;font-size:.82rem;margin-top:6px;display:none;}
+.error-msg.show{display:block;}
+.close-x{position:absolute;top:14px;right:16px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted);}
+.modal{position:relative;}
+
+.confirm-box{text-align:center;padding:10px 4px;}
+.confirm-box .big-check{font-size:2.6rem;color:var(--ok);}
+.confirm-box .num{font-weight:700;color:var(--bordeaux);font-size:1.1rem;margin:10px 0;}
+
+/* suivi commande */
+.suivi-panel{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;
+}
+.order-result{
+  border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-top:12px;background:var(--bg);
+}
+.status-pill{
+  display:inline-block;padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:600;color:#fff;
+}
+.status-commande{background:#8a8a8a;}
+.status-attente_fournisseur{background:var(--warn);}
+.status-disponible_salle{background:var(--ok);}
+
+footer.foot{
+  text-align:center;color:var(--muted);font-size:.75rem;padding:30px 16px 10px;
+}
+@media (max-width:480px){
+  .grid-products{grid-template-columns:1fr 1fr;}
+  header.top h1{font-size:1.15rem;}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <img src="https://assets.zyrosite.com/TwBwKXLriE0GFu9P/logosmall-BerhlkgaFJDlPwO1.png" alt="BO Escrime">
+  <h1>Boutique BO Escrime</h1>
+  <p>Collection textile officielle du club</p>
+</header>
+
+<div class="wrap">
+
+  <div class="notice">
+    <b>⚠️ Merci de lire avant de commander</b>
+    Le règlement s'effectue en espèces ou par chèque directement à la salle, lors de la récupération de votre commande.
+    Toute commande est <b>ferme et définitive</b>. Une modification ou annulation exceptionnelle peut être demandée
+    auprès du club (voir en bas de page — "Suivre ma commande").
+  </div>
+
+  <h2 class="section-title">1. Choisissez vos articles</h2>
+  <div class="grid-products" id="products"></div>
+
+  <h2 class="section-title">2. Mon panier</h2>
+  <div class="cart-panel">
+    <div id="cart-empty" style="color:var(--muted);font-size:.9rem;">Votre panier est vide pour le moment.</div>
+    <div id="cart-lines"></div>
+  </div>
+
+  <h2 class="section-title">🔍 Suivre ma commande</h2>
+  <div class="suivi-panel">
+    <p style="font-size:.85rem;color:var(--muted);margin-top:0;">
+      Retrouvez votre commande avec votre e-mail et votre numéro de mobile.
+    </p>
+    <div class="form-group">
+      <label>E-mail</label>
+      <input type="email" id="suivi-email" placeholder="vous@exemple.fr">
+    </div>
+    <div class="form-group">
+      <label>Mobile</label>
+      <input type="tel" id="suivi-mobile" placeholder="06 xx xx xx xx">
+    </div>
+    <button class="btn btn-outline btn-block" onclick="rechercherCommandes()">Rechercher mes commandes</button>
+    <div id="suivi-results"></div>
+  </div>
+
+</div>
+
+<footer class="foot">
+  Biarritz Olympique Escrime — Une question ? <a href="mailto:contact@bo-escrime.fr">contact@bo-escrime.fr</a>
+</footer>
+
+<div id="cart-bar" style="display:none;">
+  <div class="info">🛒 <span id="cart-count">0</span> article(s) — <span class="total" id="cart-total">0 €</span></div>
+  <button class="btn btn-small" onclick="openCheckout()">Commander</button>
+</div>
+
+<!-- MODAL CHECKOUT -->
+<div class="modal-overlay" id="checkout-overlay">
+  <div class="modal">
+    <button class="close-x" onclick="closeModal('checkout-overlay')">✕</button>
+    <h3>Finaliser ma commande</h3>
+
+    <div class="form-group"><label>Nom *</label><input type="text" id="cli-nom"></div>
+    <div class="form-group"><label>Prénom *</label><input type="text" id="cli-prenom"></div>
+    <div class="form-group"><label>Mobile *</label><input type="tel" id="cli-mobile" placeholder="06 xx xx xx xx"></div>
+    <div class="form-group"><label>E-mail *</label><input type="email" id="cli-email"></div>
+
+    <div class="form-group">
+      <label class="check-row" style="font-size:.83rem;">
+        <input type="checkbox" id="cli-cgv">
+        Je comprends que le règlement se fait à la salle lors de la récupération, et que ma commande
+        est ferme et définitive (modification/annulation exceptionnelle sur demande auprès du club).
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label>Vérification anti-robot *</label>
+      <div class="captcha-box">
+        <span id="captcha-question">?</span>
+        <input type="text" id="captcha-answer" inputmode="numeric">
+      </div>
+    </div>
+
+    <div class="error-msg" id="checkout-error"></div>
+
+    <button class="btn btn-primary btn-block" onclick="validerCommande()" id="btn-valider">Valider ma commande</button>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMATION -->
+<div class="modal-overlay" id="confirm-overlay">
+  <div class="modal confirm-box">
+    <button class="close-x" onclick="closeModal('confirm-overlay')">✕</button>
+    <div class="big-check">✅</div>
+    <h3>Commande enregistrée !</h3>
+    <p>Un e-mail de confirmation vient de vous être envoyé.</p>
+    <div class="num" id="confirm-num"></div>
+    <p style="font-size:.85rem;color:var(--muted);">Rendez-vous à la salle avec votre numéro de commande pour le règlement et la récupération.</p>
+    <button class="btn btn-primary" onclick="closeModal('confirm-overlay')">Fermer</button>
+  </div>
+</div>
+
+<!-- MODAL DEMANDE MODIF -->
+<div class="modal-overlay" id="modif-overlay">
+  <div class="modal">
+    <button class="close-x" onclick="closeModal('modif-overlay')">✕</button>
+    <h3>Demande de modification / annulation</h3>
+    <p style="font-size:.85rem;color:var(--muted);">
+      Cette demande sera envoyée directement au club. Elle n'est pas automatique : le club vous recontactera pour confirmer.
+    </p>
+    <div class="form-group">
+      <label>Votre demande *</label>
+      <textarea id="modif-message" rows="4" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;"></textarea>
+    </div>
+    <div class="error-msg" id="modif-error"></div>
+    <button class="btn btn-primary btn-block" onclick="envoyerDemandeModif()">Envoyer la demande</button>
+  </div>
+</div>
+
+<script>
+/* ==================== CONFIG ==================== */
+// Même base Firebase que le reste des outils du club (buvette, essai gratuit, galerie),
+// utilisée en accès direct REST (comme galerie-bo-escrime) — aucune clé API nécessaire.
+const FIREBASE_URL = "https://bo-escrime-default-rtdb.europe-west1.firebasedatabase.app";
+
+async function fbGet(path){
+  const r = await fetch(`${FIREBASE_URL}/${path}.json`);
+  if(!r.ok) throw new Error("Firebase lecture " + r.status);
+  return r.json();
+}
+async function fbSet(path, data){
+  const r = await fetch(`${FIREBASE_URL}/${path}.json`, {
+    method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify(data)
+  });
+  if(!r.ok) throw new Error("Firebase écriture " + r.status);
+  return r.json();
+}
+async function fbPush(path, data){
+  const r = await fetch(`${FIREBASE_URL}/${path}.json`, {
+    method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(data)
+  });
+  if(!r.ok) throw new Error("Firebase écriture " + r.status);
+  return r.json(); // { name: "-Nxxxxx" }
+}
+async function fbUpdate(path, data){
+  const r = await fetch(`${FIREBASE_URL}/${path}.json`, {
+    method:"PATCH", headers:{"Content-Type":"application/json"}, body: JSON.stringify(data)
+  });
+  if(!r.ok) throw new Error("Firebase écriture " + r.status);
+  return r.json();
+}
+function numeroCommande(){
+  return "BO-" + new Date().getFullYear() + "-" + Date.now().toString(36).toUpperCase().slice(-6);
+}
+function escapeHtml(str){
+  return String(str||"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+// Construit les <tr> HTML d'un tableau récap (Article / Qté / Prix) pour les emails
+function lignesToHtmlRows(lignes){
+  return lignes.map(l => `
+    <tr>
+      <td style="padding:8px 10px;border-bottom:1px solid #eee;">
+        ${escapeHtml(l.articleLabel)} (${escapeHtml(l.taille)})
+        ${l.supplementNom ? `<br><span style="color:#7a6b71;font-size:12px;">Flocage dos : "${escapeHtml(l.nomTireur)}"</span>` : ""}
+      </td>
+      <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;">${l.qty}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right;">${l.prixTotal} €</td>
+    </tr>`).join("");
+}
+
+// EmailJS
+const EMAILJS_PUBLIC_KEY = "z-4obQNdAye0QlTcm";
+const EMAILJS_SERVICE_ID = "service_s4wmzdc";
+// Un seul template EmailJS disponible pour toute la boutique (compte limité à 2 templates,
+// le second "ACK_RESA" étant déjà utilisé par l'essai gratuit). Ce template générique
+// ("Order Confirmation") doit être configuré avec :
+//   To email  : {{to_email}}
+//   Subject   : {{subject}}
+//   Reply To  : {{reply_to}}
+//   Content   : {{content}}   (voir GUIDE-INSTALLATION.md)
+const EMAILJS_TEMPLATE_ID = "template_94141gr";
+emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+
+const CLUB_EMAIL = "escrime@biarritzolympique.fr";
+
+// Habillage HTML commun (logo + couleurs club) autour du contenu spécifique à chaque email
+function buildEmailShell(bodyHtml){
+  return `
+<div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;background:#f7f5f6;">
+  <div style="background:linear-gradient(120deg,#7a1236,#c81d5c);padding:24px 20px;text-align:center;">
+    <img src="https://assets.zyrosite.com/TwBwKXLriE0GFu9P/logosmall-BerhlkgaFJDlPwO1.png" alt="BO Escrime" style="height:50px;margin-bottom:8px;">
+    <div style="color:#ffffff;font-size:20px;font-weight:bold;">BO Escrime</div>
+    <div style="color:#f6d9e3;font-size:13px;">Boutique du club</div>
+  </div>
+  <div style="background:#ffffff;padding:26px 24px;">
+    ${bodyHtml}
+  </div>
+  <div style="text-align:center;padding:16px;font-size:12px;color:#7a6b71;">
+    Biarritz Olympique Escrime — <a href="mailto:contact@bo-escrime.fr" style="color:#7a1236;">contact@bo-escrime.fr</a>
+  </div>
+</div>`;
+}
+
+// Envoi générique : un seul template EmailJS, tout le contenu est fabriqué côté client
+function sendBoutiqueEmail(to_email, subject, bodyHtml, reply_to){
+  return emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+    to_email,
+    subject,
+    reply_to: reply_to || CLUB_EMAIL,
+    content: buildEmailShell(bodyHtml)
+  });
+}
+
+/* ==================== CATALOGUE ==================== */
+const SIZES = ["10/12 ans","12/14 ans","XS","S","M","L","XL","XXL"];
+
+const PRODUCTS = [
+  { id:"tshirt",    label:"T-shirt BO Escrime",              price:10, img:"images/tshirt.jpg" },
+  { id:"polo",      label:"Polo BO Escrime",                 price:35, img:"images/polo.jpg" },
+  { id:"sweat",     label:"Sweat à capuche BO Escrime",      price:40, img:"images/sweat.jpg" },
+  { id:"sweat_zip", label:"Sweat à capuche zippé BO Escrime",price:45, img:"images/sweat_zip.jpg" },
+];
+const SUPPLEMENT_NOM = 6;
+
+const STATUTS = ["commande","attente_fournisseur","disponible_salle"];
+const STATUT_LABELS = {
+  commande:"Commande enregistrée",
+  attente_fournisseur:"En attente de réception fournisseur",
+  disponible_salle:"À disposition à la salle"
+};
+
+/* ==================== RENDU PRODUITS ==================== */
+const productsEl = document.getElementById("products");
+PRODUCTS.forEach(p=>{
+  const card = document.createElement("div");
+  card.className = "product-card";
+  card.innerHTML = `
+    <img src="${p.img}" alt="${p.label}" loading="lazy">
+    <div class="product-body">
+      <h3>${p.label}</h3>
+      <div class="price">${p.price} €</div>
+      <div class="field-row">
+        <label>Taille</label>
+        <select id="size-${p.id}">${SIZES.map(s=>`<option value="${s}">${s}</option>`).join("")}</select>
+      </div>
+      <label class="check-row">
+        <input type="checkbox" id="nom-check-${p.id}" onchange="toggleNameInput('${p.id}')">
+        Nom du tireur au dos (+${SUPPLEMENT_NOM} €)
+      </label>
+      <div class="name-input" id="name-wrap-${p.id}">
+        <input type="text" id="nom-tireur-${p.id}" maxlength="20" placeholder="NOM À FLOQUER" style="text-transform:uppercase;">
+      </div>
+      <div class="qty-row">
+        <button onclick="changeQty('${p.id}',-1)">−</button>
+        <span id="qty-${p.id}">1</span>
+        <button onclick="changeQty('${p.id}',1)">+</button>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="addToCart('${p.id}')">Ajouter au panier</button>
+    </div>
+  `;
+  productsEl.appendChild(card);
+});
+
+function toggleNameInput(id){
+  const checked = document.getElementById(`nom-check-${id}`).checked;
+  document.getElementById(`name-wrap-${id}`).classList.toggle("show", checked);
+}
+function changeQty(id, delta){
+  const el = document.getElementById(`qty-${id}`);
+  let v = parseInt(el.textContent) + delta;
+  if(v < 1) v = 1;
+  if(v > 20) v = 20;
+  el.textContent = v;
+}
+
+/* ==================== PANIER ==================== */
+let cart = [];
+
+function addToCart(id){
+  const p = PRODUCTS.find(x=>x.id===id);
+  const taille = document.getElementById(`size-${id}`).value;
+  const qty = parseInt(document.getElementById(`qty-${id}`).textContent);
+  const supp = document.getElementById(`nom-check-${id}`).checked;
+  let nomTireur = "";
+  if(supp){
+    nomTireur = document.getElementById(`nom-tireur-${id}`).value.trim().toUpperCase();
+    if(!nomTireur){
+      alert("Merci d'indiquer le nom à floquer au dos.");
+      return;
+    }
+  }
+  const prixUnitaire = p.price + (supp ? SUPPLEMENT_NOM : 0);
+  cart.push({
+    uid: "l" + Date.now() + Math.random().toString(36).slice(2,7),
+    article: p.id,
+    articleLabel: p.label,
+    taille, qty,
+    supplementNom: supp,
+    nomTireur,
+    prixUnitaire,
+    prixTotal: prixUnitaire * qty,
+    statut: "commande"
+  });
+  renderCart();
+  // reset quick fields
+  document.getElementById(`qty-${id}`).textContent = "1";
+  document.getElementById(`nom-check-${id}`).checked = false;
+  document.getElementById(`name-wrap-${id}`).classList.remove("show");
+  const nomInput = document.getElementById(`nom-tireur-${id}`);
+  if(nomInput) nomInput.value = "";
+}
+
+function removeFromCart(uid){
+  cart = cart.filter(l=>l.uid!==uid);
+  renderCart();
+}
+
+function renderCart(){
+  const linesEl = document.getElementById("cart-lines");
+  const emptyEl = document.getElementById("cart-empty");
+  const bar = document.getElementById("cart-bar");
+  if(cart.length===0){
+    emptyEl.style.display="block";
+    linesEl.innerHTML="";
+    bar.style.display="none";
+    return;
+  }
+  emptyEl.style.display="none";
+  linesEl.innerHTML = cart.map(l=>`
+    <div class="cart-line">
+      <div class="desc">
+        ${l.articleLabel} — taille ${l.taille} × ${l.qty}
+        ${l.supplementNom ? `<small>Flocage dos : "${l.nomTireur}" (+${SUPPLEMENT_NOM}€/unité)</small>` : ""}
+      </div>
+      <div>${l.prixTotal} €</div>
+      <button class="remove" onclick="removeFromCart('${l.uid}')">🗑</button>
+    </div>
+  `).join("");
+  const total = cart.reduce((s,l)=>s+l.prixTotal,0);
+  const count = cart.reduce((s,l)=>s+l.qty,0);
+  document.getElementById("cart-total").textContent = total + " €";
+  document.getElementById("cart-count").textContent = count;
+  bar.style.display="flex";
+}
+
+/* ==================== CHECKOUT ==================== */
+let currentCaptcha = {a:0,b:0};
+function newCaptcha(){
+  currentCaptcha.a = Math.floor(Math.random()*8)+2;
+  currentCaptcha.b = Math.floor(Math.random()*8)+2;
+  document.getElementById("captcha-question").textContent = `Combien font ${currentCaptcha.a} + ${currentCaptcha.b} ?`;
+  document.getElementById("captcha-answer").value = "";
+}
+
+function openCheckout(){
+  if(cart.length===0) return;
+  newCaptcha();
+  document.getElementById("checkout-error").classList.remove("show");
+  document.getElementById("checkout-overlay").classList.add("show");
+}
+function closeModal(id){ document.getElementById(id).classList.remove("show"); }
+
+function showCheckoutError(msg){
+  const el = document.getElementById("checkout-error");
+  el.textContent = msg;
+  el.classList.add("show");
+}
+
+async function validerCommande(){
+  const nom = document.getElementById("cli-nom").value.trim();
+  const prenom = document.getElementById("cli-prenom").value.trim();
+  const mobile = document.getElementById("cli-mobile").value.trim();
+  const email = document.getElementById("cli-email").value.trim();
+  const cgv = document.getElementById("cli-cgv").checked;
+  const captchaVal = parseInt(document.getElementById("captcha-answer").value);
+
+  if(!nom || !prenom || !mobile || !email){
+    showCheckoutError("Merci de renseigner tous les champs obligatoires.");
+    return;
+  }
+  if(!/^\S+@\S+\.\S+$/.test(email)){
+    showCheckoutError("Adresse e-mail invalide.");
+    return;
+  }
+  if(!cgv){
+    showCheckoutError("Merci de valider les conditions de commande.");
+    return;
+  }
+  if(captchaVal !== currentCaptcha.a + currentCaptcha.b){
+    showCheckoutError("Réponse anti-robot incorrecte, merci de réessayer.");
+    newCaptcha();
+    return;
+  }
+
+  const btn = document.getElementById("btn-valider");
+  btn.disabled = true;
+  btn.textContent = "Envoi en cours...";
+
+  try{
+    const total = cart.reduce((s,l)=>s+l.prixTotal,0);
+    const numero = numeroCommande();
+
+    const lignes = {};
+    cart.forEach(l=>{ lignes[l.uid] = l; });
+
+    const order = {
+      numero,
+      dateCommande: new Date().toISOString(),
+      client: { nom, prenom, mobile, email },
+      lignes,
+      totalCommande: total,
+      demandeModification: false
+    };
+    await fbPush("boutique/commandes", order);
+
+    // Récap HTML pour les e-mails (tableau)
+    const recapHtml = lignesToHtmlRows(cart);
+
+    const clientBodyHtml = `
+      <h2 style="color:#7a1236;margin-top:0;">Commande confirmée ✅</h2>
+      <p>Bonjour ${escapeHtml(prenom)} ${escapeHtml(nom)},</p>
+      <p>Votre commande a bien été enregistrée. Voici le récapitulatif :</p>
+      <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+        <thead>
+          <tr style="background:#f7f5f6;">
+            <th style="text-align:left;padding:8px 10px;font-size:12px;color:#7a6b71;text-transform:uppercase;">Article</th>
+            <th style="text-align:center;padding:8px 10px;font-size:12px;color:#7a6b71;text-transform:uppercase;">Qté</th>
+            <th style="text-align:right;padding:8px 10px;font-size:12px;color:#7a6b71;text-transform:uppercase;">Prix</th>
+          </tr>
+        </thead>
+        <tbody>${recapHtml}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2" style="padding:10px;font-weight:bold;">Total</td>
+            <td style="padding:10px;text-align:right;font-weight:bold;color:#7a1236;">${total} €</td>
+          </tr>
+        </tfoot>
+      </table>
+      <div style="background:#fff3e0;border:1px solid #f0c987;border-radius:8px;padding:12px 14px;font-size:13px;color:#7a5300;margin:16px 0;">
+        ⚠️ Le règlement se fait en espèces ou par chèque, directement à la salle, lors de la récupération.
+        Votre commande est ferme et définitive.
+      </div>
+      <p style="font-size:13px;color:#7a6b71;">Numéro de commande : <b>${numero}</b></p>
+      <p>Sportivement,<br>BO Escrime</p>
+    `;
+
+    const clubBodyHtml = `
+      <h2 style="color:#7a1236;margin-top:0;">Nouvelle commande boutique 🛒</h2>
+      <table style="width:100%;font-size:14px;margin-bottom:16px;">
+        <tr><td style="padding:4px 0;color:#7a6b71;">Client</td><td style="padding:4px 0;font-weight:bold;">${escapeHtml(prenom)} ${escapeHtml(nom)}</td></tr>
+        <tr><td style="padding:4px 0;color:#7a6b71;">Mobile</td><td style="padding:4px 0;">${escapeHtml(mobile)}</td></tr>
+        <tr><td style="padding:4px 0;color:#7a6b71;">Email</td><td style="padding:4px 0;">${escapeHtml(email)}</td></tr>
+        <tr><td style="padding:4px 0;color:#7a6b71;">N° commande</td><td style="padding:4px 0;font-weight:bold;">${numero}</td></tr>
+      </table>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="background:#f7f5f6;">
+            <th style="text-align:left;padding:8px 10px;font-size:12px;color:#7a6b71;text-transform:uppercase;">Article</th>
+            <th style="text-align:center;padding:8px 10px;font-size:12px;color:#7a6b71;text-transform:uppercase;">Qté</th>
+            <th style="text-align:right;padding:8px 10px;font-size:12px;color:#7a6b71;text-transform:uppercase;">Prix</th>
+          </tr>
+        </thead>
+        <tbody>${recapHtml}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2" style="padding:10px;font-weight:bold;">Total</td>
+            <td style="padding:10px;text-align:right;font-weight:bold;color:#7a1236;">${total} €</td>
+          </tr>
+        </tfoot>
+      </table>
+    `;
+
+    // Email client
+    sendBoutiqueEmail(email, `Confirmation de votre commande ${numero} — BO Escrime`, clientBodyHtml, CLUB_EMAIL)
+      .catch(err=>console.error("EmailJS client:", err));
+
+    // Email club
+    sendBoutiqueEmail(CLUB_EMAIL, `Nouvelle commande boutique ${numero}`, clubBodyHtml, email)
+      .catch(err=>console.error("EmailJS club:", err));
+
+    cart = [];
+    renderCart();
+    closeModal("checkout-overlay");
+    document.getElementById("confirm-num").textContent = "N° de commande : " + numero;
+    document.getElementById("confirm-overlay").classList.add("show");
+
+  }catch(err){
+    console.error(err);
+    showCheckoutError("Une erreur est survenue, merci de réessayer.");
+  }finally{
+    btn.disabled = false;
+    btn.textContent = "Valider ma commande";
+  }
+}
+
+/* ==================== SUIVI COMMANDE ==================== */
+let commandesTrouvees = [];
+
+async function rechercherCommandes(){
+  const email = document.getElementById("suivi-email").value.trim().toLowerCase();
+  const mobile = document.getElementById("suivi-mobile").value.trim();
+  const resultsEl = document.getElementById("suivi-results");
+  if(!email || !mobile){
+    resultsEl.innerHTML = `<p style="color:#b02a37;font-size:.85rem;">Merci de renseigner e-mail et mobile.</p>`;
+    return;
+  }
+  resultsEl.innerHTML = `<p style="font-size:.85rem;color:var(--muted);">Recherche...</p>`;
+
+  const data = (await fbGet("boutique/commandes")) || {};
+  commandesTrouvees = [];
+  Object.entries(data).forEach(([key, cmd])=>{
+    if(cmd.client && cmd.client.email && cmd.client.email.toLowerCase()===email && cmd.client.mobile===mobile){
+      commandesTrouvees.push({key, ...cmd});
+    }
+  });
+
+  if(commandesTrouvees.length===0){
+    resultsEl.innerHTML = `<p style="font-size:.85rem;color:var(--muted);">Aucune commande trouvée avec ces informations.</p>`;
+    return;
+  }
+
+  resultsEl.innerHTML = commandesTrouvees.map(cmd=>{
+    const lignes = Object.values(cmd.lignes || {});
+    const statuts = lignes.map(l=>STATUTS.indexOf(l.statut||"commande"));
+    const globalIdx = Math.min(...statuts);
+    const statutGlobal = STATUTS[globalIdx];
+    const lignesHtml = lignes.map(l=>`
+      <div style="display:flex;justify-content:space-between;font-size:.82rem;padding:4px 0;border-bottom:1px dashed var(--border);">
+        <span>${l.articleLabel} (${l.taille}) x${l.qty}${l.supplementNom?` — "${l.nomTireur}"`:""}</span>
+        <span class="status-pill status-${l.statut||'commande'}">${STATUT_LABELS[l.statut||'commande']}</span>
+      </div>
+    `).join("");
+    return `
+      <div class="order-result">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <b>${cmd.numero}</b>
+          <span class="status-pill status-${statutGlobal}">${STATUT_LABELS[statutGlobal]}</span>
+        </div>
+        <div style="font-size:.78rem;color:var(--muted);margin:4px 0 8px;">
+          ${new Date(cmd.dateCommande).toLocaleDateString('fr-FR')} — Total : ${cmd.totalCommande} €
+        </div>
+        ${lignesHtml}
+        <button class="btn btn-outline btn-small" style="margin-top:10px;" onclick="openModifModal('${cmd.key}')">
+          Demander une modification / annulation
+        </button>
+        ${cmd.demandeModification ? `<div style="font-size:.75rem;color:var(--warn);margin-top:6px;">⏳ Une demande est déjà en cours pour cette commande.</div>` : ""}
+      </div>
+    `;
+  }).join("");
+}
+
+let modifOrderKey = null;
+function openModifModal(orderKey){
+  modifOrderKey = orderKey;
+  document.getElementById("modif-message").value = "";
+  document.getElementById("modif-error").classList.remove("show");
+  document.getElementById("modif-overlay").classList.add("show");
+}
+
+async function envoyerDemandeModif(){
+  const msg = document.getElementById("modif-message").value.trim();
+  if(!msg){
+    const el = document.getElementById("modif-error");
+    el.textContent = "Merci de préciser votre demande.";
+    el.classList.add("show");
+    return;
+  }
+  const cmd = commandesTrouvees.find(c=>c.key===modifOrderKey);
+  if(!cmd) return;
+
+  try{
+    await fbUpdate(`boutique/commandes/${modifOrderKey}`, {
+      demandeModification: true,
+      dateDemandeModification: new Date().toISOString(),
+      messageDemandeModification: msg
+    });
+
+    const modifBodyHtml = `
+      <h2 style="color:#b02a37;margin-top:0;">⚠️ Demande de modification / annulation</h2>
+      <table style="width:100%;font-size:14px;margin-bottom:16px;">
+        <tr><td style="padding:4px 0;color:#7a6b71;">Commande</td><td style="padding:4px 0;font-weight:bold;">${cmd.numero}</td></tr>
+        <tr><td style="padding:4px 0;color:#7a6b71;">Client</td><td style="padding:4px 0;">${escapeHtml(cmd.client.prenom)} ${escapeHtml(cmd.client.nom)}</td></tr>
+        <tr><td style="padding:4px 0;color:#7a6b71;">Mobile</td><td style="padding:4px 0;">${escapeHtml(cmd.client.mobile)}</td></tr>
+        <tr><td style="padding:4px 0;color:#7a6b71;">Email</td><td style="padding:4px 0;">${escapeHtml(cmd.client.email)}</td></tr>
+      </table>
+      <div style="background:#fdecea;border-left:4px solid #b02a37;padding:12px 14px;font-size:14px;border-radius:4px;">
+        ${escapeHtml(msg).replace(/\n/g,"<br>")}
+      </div>
+    `;
+
+    sendBoutiqueEmail(CLUB_EMAIL, `Demande modification/annulation — ${cmd.numero}`, modifBodyHtml, cmd.client.email)
+      .catch(err=>console.error("EmailJS modif:", err));
+
+    closeModal("modif-overlay");
+    alert("Votre demande a bien été envoyée au club. Vous serez recontacté(e).");
+    rechercherCommandes();
+  }catch(err){
+    console.error(err);
+    const el = document.getElementById("modif-error");
+    el.textContent = "Erreur lors de l'envoi, merci de réessayer.";
+    el.classList.add("show");
+  }
+}
+</script>
+</body>
+</html>
