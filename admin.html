@@ -419,7 +419,13 @@ function statutGlobalOrder(order){
 function renderStats(){
   const orders = Object.values(commandes);
   const total = orders.length;
-  const ca = orders.reduce((s,o)=>s+(o.totalCommande||0),0);
+  // CA calculé en direct à partir des lignes actives (non annulées), pour ne jamais
+  // dépendre d'un champ totalCommande potentiellement obsolète.
+  const ca = orders.reduce((sum,o)=>{
+    const lignesActives = Object.values(o.lignes||{}).filter(l=>!l.annulee);
+    return sum + lignesActives.reduce((s,l)=>s+(l.prixTotal||0),0);
+  }, 0);
+  const annulees = orders.filter(o=>statutGlobalOrder(o)==="annulee").length;
   const enAttenteFournisseur = orders.filter(o=>statutGlobalOrder(o)==="attente_fournisseur").length;
   const pretes = orders.filter(o=>statutGlobalOrder(o)==="disponible_salle").length;
   document.getElementById("stats").innerHTML = `
@@ -427,6 +433,7 @@ function renderStats(){
     <div class="stat-box"><div class="num">${ca} €</div><div class="lbl">Chiffre d'affaires</div></div>
     <div class="stat-box"><div class="num">${enAttenteFournisseur}</div><div class="lbl">Attente fournisseur</div></div>
     <div class="stat-box"><div class="num">${pretes}</div><div class="lbl">Prêtes (100%)</div></div>
+    <div class="stat-box"><div class="num">${annulees}</div><div class="lbl">Annulées</div></div>
   `;
 }
 
