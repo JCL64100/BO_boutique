@@ -122,6 +122,7 @@ th{color:var(--muted);font-weight:600;font-size:.72rem;text-transform:uppercase;
       <button class="tab-btn" onclick="showTab('bc')">📝 Bons de commande</button>
       <button class="tab-btn" onclick="showTab('reception')">🚚 Réceptions</button>
       <button class="tab-btn" onclick="showTab('fournisseurs')">🏭 Fournisseurs</button>
+      <button class="tab-btn" onclick="showTab('maintenance')">🧹 Maintenance</button>
     </div>
 
     <!-- ONGLET COMMANDES -->
@@ -220,8 +221,40 @@ th{color:var(--muted);font-weight:600;font-size:.72rem;text-transform:uppercase;
       </div>
     </div>
 
+    <!-- ONGLET MAINTENANCE -->
+    <div class="tab-content" id="tab-maintenance">
+      <div class="card" style="border:1px solid #f0c2c2;background:#fff7f7;">
+        <h3 style="color:#b02a37;">⚠️ Zone de maintenance — actions irréversibles</h3>
+        <p style="font-size:.82rem;color:var(--muted);">
+          Pour vider des données de test, tapez exactement <b>SUPPRIMER</b> dans le champ ci-dessous,
+          puis cliquez sur le bouton correspondant. Chaque action est définitive et ne peut pas être annulée.
+        </p>
+        <div class="form-grid" style="max-width:300px;">
+          <div>
+            <label class="fl">Confirmation</label>
+            <input type="text" id="maintenance-confirm" placeholder="Tapez SUPPRIMER">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+          <button class="btn btn-danger btn-small" onclick="viderNode('boutique/commandes','Toutes les commandes clients ont été supprimées.')">
+            🗑 Vider toutes les commandes
+          </button>
+          <button class="btn btn-danger btn-small" onclick="viderNode('boutique/fournisseurs','Tous les fournisseurs ont été supprimés.')">
+            🗑 Vider tous les fournisseurs
+          </button>
+          <button class="btn btn-danger btn-small" onclick="viderNode('boutique/bonsCommande','Tous les bons de commande ont été supprimés.')">
+            🗑 Vider tous les bons de commande
+          </button>
+          <button class="btn btn-danger" onclick="viderTout()">
+            🗑 TOUT réinitialiser (commandes + fournisseurs + BC)
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
+
 
 <div class="toast" id="toast"></div>
 
@@ -902,6 +935,38 @@ async function supprimerFournisseur(id){
   await fbDelete(`boutique/fournisseurs/${id}`);
   await refreshAll();
   toast("Fournisseur supprimé.");
+}
+
+/* ==================== ONGLET MAINTENANCE ==================== */
+function checkMaintenanceConfirm(){
+  const val = document.getElementById("maintenance-confirm").value.trim();
+  if(val !== "SUPPRIMER"){
+    toast('Merci de taper exactement "SUPPRIMER" dans le champ de confirmation.');
+    return false;
+  }
+  return true;
+}
+
+async function viderNode(path, successMsg){
+  if(!checkMaintenanceConfirm()) return;
+  if(!confirm("Confirmez-vous cette suppression définitive ?")) return;
+  await fbDelete(path);
+  document.getElementById("maintenance-confirm").value = "";
+  await refreshAll();
+  toast(successMsg);
+}
+
+async function viderTout(){
+  if(!checkMaintenanceConfirm()) return;
+  if(!confirm("Confirmez-vous la réinitialisation COMPLÈTE de la boutique (commandes + fournisseurs + bons de commande) ?")) return;
+  await Promise.all([
+    fbDelete("boutique/commandes"),
+    fbDelete("boutique/fournisseurs"),
+    fbDelete("boutique/bonsCommande")
+  ]);
+  document.getElementById("maintenance-confirm").value = "";
+  await refreshAll();
+  toast("Boutique entièrement réinitialisée.");
 }
 </script>
 </body>
