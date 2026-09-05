@@ -35,10 +35,22 @@ header.top{
   color:#fff;
   padding:18px 16px 22px;
   text-align:center;
+  position:relative;
 }
 header.top img{height:56px;display:block;margin:0 auto 10px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.25));}
 header.top h1{margin:0;font-size:1.4rem;letter-spacing:.5px;}
 header.top p{margin:6px 0 0;font-size:.85rem;opacity:.92;}
+.back-home{
+  position:absolute;top:14px;left:14px;
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(255,255,255,.18);color:#fff;text-decoration:none;
+  font-size:.78rem;padding:6px 11px;border-radius:20px;
+  backdrop-filter:blur(2px);
+}
+.back-home:hover{background:rgba(255,255,255,.3);}
+@media (max-width:480px){
+  .back-home{position:static;display:inline-flex;margin-bottom:8px;}
+}
 
 .wrap{max-width:960px;margin:0 auto;padding:16px;}
 
@@ -155,6 +167,7 @@ select, input[type=text], input[type=email], input[type=tel]{
 .status-commande{background:#8a8a8a;}
 .status-attente_fournisseur{background:var(--warn);}
 .status-disponible_salle{background:var(--ok);}
+.status-annulee{background:#b02a37;}
 
 footer.foot{
   text-align:center;color:var(--muted);font-size:.75rem;padding:30px 16px 10px;
@@ -168,6 +181,7 @@ footer.foot{
 <body>
 
 <header class="top">
+  <a href="https://bo-escrime.fr" class="back-home">← Retour à l'accueil</a>
   <img src="https://assets.zyrosite.com/TwBwKXLriE0GFu9P/logosmall-BerhlkgaFJDlPwO1.png" alt="BO Escrime">
   <h1>Boutique BO Escrime</h1>
   <p>Collection textile officielle du club</p>
@@ -391,7 +405,8 @@ const STATUTS = ["commande","attente_fournisseur","disponible_salle"];
 const STATUT_LABELS = {
   commande:"Commande enregistrée",
   attente_fournisseur:"En attente de réception fournisseur",
-  disponible_salle:"À disposition à la salle"
+  disponible_salle:"À disposition à la salle",
+  annulee:"Annulée"
 };
 
 /* ==================== RENDU PRODUITS ==================== */
@@ -686,15 +701,22 @@ async function rechercherCommandes(){
 
   resultsEl.innerHTML = commandesTrouvees.map(cmd=>{
     const lignes = Object.values(cmd.lignes || {});
-    const statuts = lignes.map(l=>STATUTS.indexOf(l.statut||"commande"));
-    const globalIdx = Math.min(...statuts);
-    const statutGlobal = STATUTS[globalIdx];
+    const actives = lignes.filter(l=>!l.annulee);
+    let statutGlobal;
+    if(actives.length===0){
+      statutGlobal = lignes.length===0 ? "commande" : "annulee";
+    }else{
+      const statuts = actives.map(l=>STATUTS.indexOf(l.statut||"commande"));
+      statutGlobal = STATUTS[Math.min(...statuts)];
+    }
+    const total = actives.reduce((s,l)=>s+(l.prixTotal||0),0);
     const lignesHtml = lignes.map(l=>`
-      <div style="display:flex;justify-content:space-between;font-size:.82rem;padding:4px 0;border-bottom:1px dashed var(--border);">
-        <span>${l.articleLabel} (${l.taille}) x${l.qty}${l.supplementNom?` — "${l.nomTireur}"`:""}</span>
-        <span class="status-pill status-${l.statut||'commande'}">${STATUT_LABELS[l.statut||'commande']}</span>
+      <div style="display:flex;justify-content:space-between;font-size:.82rem;padding:4px 0;border-bottom:1px dashed var(--border);${l.annulee?'opacity:.55;':''}">
+        <span style="${l.annulee?'text-decoration:line-through;':''}">${l.articleLabel} (${l.taille}) x${l.qty}${l.supplementNom?` — "${l.nomTireur}"`:""}</span>
+        <span class="status-pill status-${l.annulee?'annulee':(l.statut||'commande')}">${l.annulee?STATUT_LABELS.annulee:STATUT_LABELS[l.statut||'commande']}</span>
       </div>
     `).join("");
+    const toutesAnnulees = lignes.length>0 && lignes.every(l=>l.annulee);
     return `
       <div class="order-result">
         <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -702,12 +724,14 @@ async function rechercherCommandes(){
           <span class="status-pill status-${statutGlobal}">${STATUT_LABELS[statutGlobal]}</span>
         </div>
         <div style="font-size:.78rem;color:var(--muted);margin:4px 0 8px;">
-          ${new Date(cmd.dateCommande).toLocaleDateString('fr-FR')} — Total : ${cmd.totalCommande} €
+          ${new Date(cmd.dateCommande).toLocaleDateString('fr-FR')} — Total : ${total} €
         </div>
         ${lignesHtml}
-        <button class="btn btn-outline btn-small" style="margin-top:10px;" onclick="openModifModal('${cmd.key}')">
-          Demander une modification / annulation
-        </button>
+        ${!toutesAnnulees ? `
+          <button class="btn btn-outline btn-small" style="margin-top:10px;" onclick="openModifModal('${cmd.key}')">
+            Demander une modification / annulation
+          </button>
+        ` : ""}
         ${cmd.demandeModification ? `<div style="font-size:.75rem;color:var(--warn);margin-top:6px;">⏳ Une demande est déjà en cours pour cette commande.</div>` : ""}
       </div>
     `;
