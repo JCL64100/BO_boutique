@@ -393,11 +393,14 @@ function sendBoutiqueEmail(to_email, subject, bodyHtml, reply_to){
 /* ==================== CATALOGUE ==================== */
 const SIZES = ["10/12 ans","12/14 ans","XS","S","M","L","XL","XXL"];
 
+const SIZES_CHAUSSETTES = ["31/34","35/38","39/42","43/46"];
+
 const PRODUCTS = [
-  { id:"tshirt",    label:"T-shirt BO Escrime",              price:10, img:"images/tshirt.jpg" },
-  { id:"polo",      label:"Polo BO Escrime",                 price:35, img:"images/polo.jpg" },
-  { id:"sweat",     label:"Sweat à capuche BO Escrime",      price:40, img:"images/sweat.jpg" },
-  { id:"sweat_zip", label:"Sweat à capuche zippé BO Escrime",price:45, img:"images/sweat_zip.jpg" },
+  { id:"tshirt",      label:"T-shirt BO Escrime",              price:10, img:"images/tshirt.jpg" },
+  { id:"polo",        label:"Polo BO Escrime",                 price:35, img:"images/polo.jpg" },
+  { id:"sweat",       label:"Sweat à capuche BO Escrime",      price:40, img:"images/sweat.jpg" },
+  { id:"sweat_zip",   label:"Sweat à capuche zippé BO Escrime",price:45, img:"images/sweat_zip.jpg" },
+  { id:"chaussettes", label:"Chaussettes BO Escrime",          price:15, img:"images/chaussette.jpg", sizes:SIZES_CHAUSSETTES, noFlocage:true },
 ];
 const SUPPLEMENT_NOM = 6;
 
@@ -414,6 +417,7 @@ const productsEl = document.getElementById("products");
 PRODUCTS.forEach(p=>{
   const card = document.createElement("div");
   card.className = "product-card";
+  const tailles = p.sizes || SIZES;
   card.innerHTML = `
     <img src="${p.img}" alt="${p.label}" loading="lazy">
     <div class="product-body">
@@ -421,8 +425,9 @@ PRODUCTS.forEach(p=>{
       <div class="price">${p.price} €</div>
       <div class="field-row">
         <label>Taille</label>
-        <select id="size-${p.id}">${SIZES.map(s=>`<option value="${s}">${s}</option>`).join("")}</select>
+        <select id="size-${p.id}">${tailles.map(s=>`<option value="${s}">${s}</option>`).join("")}</select>
       </div>
+      ${p.noFlocage ? "" : `
       <label class="check-row">
         <input type="checkbox" id="nom-check-${p.id}" onchange="toggleNameInput('${p.id}')">
         Nom du tireur au dos (+${SUPPLEMENT_NOM} €)
@@ -430,6 +435,7 @@ PRODUCTS.forEach(p=>{
       <div class="name-input" id="name-wrap-${p.id}">
         <input type="text" id="nom-tireur-${p.id}" maxlength="20" placeholder="NOM À FLOQUER" style="text-transform:uppercase;">
       </div>
+      `}
       <div class="qty-row">
         <button onclick="changeQty('${p.id}',-1)">−</button>
         <span id="qty-${p.id}">1</span>
@@ -460,7 +466,8 @@ function addToCart(id){
   const p = PRODUCTS.find(x=>x.id===id);
   const taille = document.getElementById(`size-${id}`).value;
   const qty = parseInt(document.getElementById(`qty-${id}`).textContent);
-  const supp = document.getElementById(`nom-check-${id}`).checked;
+  const nomCheckEl = document.getElementById(`nom-check-${id}`);
+  const supp = nomCheckEl ? nomCheckEl.checked : false;
   let nomTireur = "";
   if(supp){
     nomTireur = document.getElementById(`nom-tireur-${id}`).value.trim().toUpperCase();
@@ -484,8 +491,10 @@ function addToCart(id){
   renderCart();
   // reset quick fields
   document.getElementById(`qty-${id}`).textContent = "1";
-  document.getElementById(`nom-check-${id}`).checked = false;
-  document.getElementById(`name-wrap-${id}`).classList.remove("show");
+  if(nomCheckEl){
+    nomCheckEl.checked = false;
+    document.getElementById(`name-wrap-${id}`).classList.remove("show");
+  }
   const nomInput = document.getElementById(`nom-tireur-${id}`);
   if(nomInput) nomInput.value = "";
 }
